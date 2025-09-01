@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Ride {
   final String id;
-  final String tripId;
   final String travelerId;
   final String driverName;
   final String driverPhone;
@@ -10,12 +9,10 @@ class Ride {
   final String pickup;
   final String drop;
   final String status;
-  final Timestamp sharedAt;
-  final Timestamp? completedAt;
+  final DateTime createdAt;
 
   Ride({
     required this.id,
-    required this.tripId,
     required this.travelerId,
     required this.driverName,
     required this.driverPhone,
@@ -23,35 +20,34 @@ class Ride {
     required this.pickup,
     required this.drop,
     required this.status,
-    required this.sharedAt,
-    this.completedAt,
+    required this.createdAt,
   });
 
-  factory Ride.fromJson(Map<String, dynamic> json) => Ride(
-    id: json['id'],
-    tripId: json['tripId'],
-    travelerId: json['travelerId'],
-    driverName: json['driverName'],
-    driverPhone: json['driverPhone'],
-    cabNumber: json['cabNumber'],
-    pickup: json['pickup'],
-    drop: json['drop'],
-    status: json['status'],
-    sharedAt: json['sharedAt'],
-    completedAt: json['completedAt'],
-  );
+  factory Ride.fromJson(Map<String, dynamic> json) {
+    return Ride(
+      id: json['id'] as String,
+      travelerId: json['travelerId'] as String,
+      driverName: json['driverName'] as String,
+      driverPhone: json['driverPhone'] as String,
+      cabNumber: json['cabNumber'] as String,
+      pickup: json['pickup'] as String,
+      drop: json['drop'] as String,
+      status: json['status'] as String,
+      createdAt: (json['createdAt'] as Timestamp).toDate(),
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'tripId': tripId,
-    'travelerId': travelerId,
-    'driverName': driverName,
-    'driverPhone': driverPhone,
-    'cabNumber': cabNumber,
-    'pickup': pickup,
-    'drop': drop,
-    'status': status,
-    'sharedAt': sharedAt,
-    'completedAt': completedAt,
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'travelerId': travelerId,
+      'driverName': driverName,
+      'driverPhone': driverPhone,
+      'cabNumber': cabNumber,
+      'pickup': pickup,
+      'drop': drop,
+      'status': status,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
 }

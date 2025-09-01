@@ -1,6 +1,6 @@
 class Routes {
   static const String login = '/login';
-  static const String signup = '/signup';
+  static const String signup = '/signup'; // Ensure this is defined
   static const String roleSelection = '/role-selection';
 
   // Traveler routes

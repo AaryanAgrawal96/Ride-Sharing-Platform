@@ -1,87 +1,72 @@
 import 'package:flutter/material.dart';
-import '../../constants/routes.dart';
+import 'package:ride_tracking_platform/models/ride.dart';
+import 'package:ride_tracking_platform/services/ride_service.dart';
 
-class ActiveRidePage extends StatelessWidget {
-  const ActiveRidePage({super.key});
+class ActiveRidePage extends StatefulWidget {
+  final Ride ride;
+
+  const ActiveRidePage({super.key, required this.ride});
+
+  @override
+  State<ActiveRidePage> createState() => _ActiveRidePageState();
+}
+
+class _ActiveRidePageState extends State<ActiveRidePage> {
+  final RideService _rideService = RideService();
+  bool _isSharing = false;
+
+  Future<void> _shareRide() async {
+    if (_isSharing) return;
+
+    setState(() => _isSharing = true);
+
+    try {
+      await _rideService.updateRideStatus(widget.ride.id, 'shared');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ride shared successfully')),
+        );
+        Navigator.pop(context, true); // Return to previous page
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing ride: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Active Ride'),
-      ),
-      body: Column(
-        children: [
-          // Dummy map preview
-          Container(
-            height: 300,
-            color: Colors.grey[200],
-            child: const Center(
-              child: Text('Map Preview'),
+      appBar: AppBar(title: const Text('Active Ride')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pickup: ${widget.ride.pickup}'),
+            Text('Drop: ${widget.ride.drop}'),
+            Text('Driver: ${widget.ride.driverName}'),
+            Text('Cab: ${widget.ride.cabNumber}'),
+            Text('Status: ${widget.ride.status}'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _isSharing ? null : _shareRide,
+              child: _isSharing
+                  ? const CircularProgressIndicator()
+                  : const Text('Share Ride'),
             ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Card(
-                    child: ListTile(
-                      leading: Icon(Icons.person),
-                      title: Text('John Doe'),
-                      subtitle: Text('Driver'),
-                      trailing: Chip(
-                        label: Text('Active'),
-                        backgroundColor: Colors.green,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Trip Details',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          SizedBox(height: 8),
-                          Text('From: Airport Terminal 1'),
-                          Text('To: City Center Hotel'),
-                          Text('Cab: KA-01-XX-1234'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Generate and share ride ID
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Share Ride'),
-                          content: const Text('Ride ID: ABC123\nShare this ID with your companion'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Close'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    child: const Text('Share Ride'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

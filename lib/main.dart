@@ -1,9 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:ride_tracking_platform/firebase_options.dart';
-import 'pages/auth/signup_page.dart';
 import 'pages/auth/login_page.dart';
 import 'pages/auth/role_selection_page.dart';
+import 'pages/auth/signup_page.dart';
 import 'pages/traveler/traveler_home.dart';
 import 'pages/traveler/create_ride_page.dart';
 import 'pages/traveler/active_ride_page.dart';
@@ -14,6 +14,7 @@ import 'pages/companion/feedback_page.dart';
 import 'pages/admin/admin_dashboard.dart';
 import 'pages/admin/ride_detail_page.dart';
 import 'constants/routes.dart';
+import 'models/ride.dart'; // Import the Ride model
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,14 +36,21 @@ class MyApp extends StatelessWidget {
           secondary: Colors.amber,
         ),
       ),
-      initialRoute: Routes.login,
+      initialRoute: Routes.roleSelection,
       routes: {
         Routes.login: (context) => const LoginPage(),
         Routes.signup: (context) => const SignupPage(),
-        Routes.roleSelection: (context) => const RoleSelectionPage(),
-        '/traveler/home': (context) => const TravelerHome(),
+        '/role-selection': (context) => const RoleSelectionPage(),
+        '/traveler/home': (context) => TravelerHome(
+          travelerId: 'exampleTravelerId',
+        ), // Ensure this matches Firestore data
         '/traveler/create-ride': (context) => const CreateRidePage(),
-        '/traveler/active-ride': (context) => const ActiveRidePage(),
+        '/traveler/active-ride': (context) {
+          final ride =
+              ModalRoute.of(context)!.settings.arguments
+                  as Ride; // Ride is now recognized
+          return ActiveRidePage(ride: ride);
+        },
         '/traveler/share-audit': (context) => const ShareAuditPage(),
         '/companion/home': (context) => const CompanionHome(),
         '/companion/track': (context) => const TrackRidePage(),

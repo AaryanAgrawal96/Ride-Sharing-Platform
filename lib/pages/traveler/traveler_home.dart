@@ -1,28 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:ride_tracking_platform/services/ride_service.dart';
+import 'package:ride_tracking_platform/models/ride.dart';
 import '../../constants/routes.dart';
 
 class TravelerHome extends StatefulWidget {
-  const TravelerHome({super.key});
+  final String travelerId;
+
+  const TravelerHome({super.key, required this.travelerId});
 
   @override
   State<TravelerHome> createState() => _TravelerHomeState();
 }
 
 class _TravelerHomeState extends State<TravelerHome> {
-  final List<Map<String, String>> _dummyRides = [
-    {
-      'driver': 'John Doe',
-      'from': 'Airport',
-      'to': 'City Center',
-      'status': 'Active'
-    },
-    {
-      'driver': 'Jane Smith',
-      'from': 'Mall',
-      'to': 'Residence',
-      'status': 'Completed'
-    },
-  ];
+  final RideService _rideService = RideService();
+  List<Ride> _rides = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRides();
+  }
+
+  Future<void> _fetchRides() async {
+    try {
+      print('Fetching rides in TravelerHome...'); // Debug log
+      final rides = await _rideService.fetchRides(widget.travelerId);
+      setState(() {
+        _rides = rides;
+        _isLoading = false;
+      });
+      print('Rides fetched: $_rides'); // Debug log
+    } catch (e) {
+      print('Error in TravelerHome: $e'); // Debug log
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error fetching rides: $e')));
+      }
+    }
+  }
+
+  Future<void> _navigateToCreateRide() async {
+    // Navigate to CreateRidePage and wait for it to complete
+    final result = await Navigator.pushNamed(context, Routes.createRide);
+
+    // If a new ride was created, refresh the ride list
+    if (result == true) {
+      _fetchRides();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,62 +59,38 @@ class _TravelerHomeState extends State<TravelerHome> {
         title: const Text('My Rides'),
         automaticallyImplyLeading: false,
       ),
-      body: ListView.builder(
-        itemCount: _dummyRides.length,
-        itemBuilder: (context, index) {
-          final ride = _dummyRides[index];
-          return Card(
-            margin: const EdgeInsets.all(8.0),
-            child: ListTile(
-              title: Text('Driver: ${ride['driver']}'),
-              subtitle: Text('${ride['from']} → ${ride['to']}'),
-              trailing: Chip(
-                label: Text(ride['status']!),
-                backgroundColor: ride['status'] == 'Active' 
-                    ? Colors.green[100] 
-                    : Colors.grey[300],
-              ),
-              onTap: () => Navigator.pushNamed(
-                context,
-                Routes.activeRide,
-              ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _rides.isEmpty
+          ? const Center(child: Text('No rides found'))
+          : ListView.builder(
+              itemCount: _rides.length,
+              itemBuilder: (context, index) {
+                final ride = _rides[index];
+                return Card(
+                  margin: const EdgeInsets.all(8.0),
+                  child: ListTile(
+                    title: Text('${ride.pickup} → ${ride.drop}'),
+                    subtitle: Text('Driver: ${ride.driverName}'),
+                    trailing: Chip(
+                      label: Text(ride.status),
+                      backgroundColor: ride.status == 'active'
+                          ? Colors.green[100]
+                          : Colors.grey[300],
+                    ),
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      Routes.activeRide,
+                      arguments: ride,
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(
-          context,
-          Routes.createRide,
-        ),
+        onPressed: _navigateToCreateRide, // Call the navigation function
         label: const Text('Create Ride'),
         icon: const Icon(Icons.add),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle),
-            label: 'Create',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'Audit',
-          ),
-        ],
-        onTap: (index) {
-          switch (index) {
-            case 1:
-              Navigator.pushNamed(context, Routes.createRide);
-              break;
-            case 2:
-              Navigator.pushNamed(context, Routes.shareAudit);
-              break;
-          }
-        },
       ),
     );
   }

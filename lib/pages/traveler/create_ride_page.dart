@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../constants/routes.dart';
+import 'package:ride_tracking_platform/services/ride_service.dart';
+import 'package:ride_tracking_platform/models/ride.dart';
+import 'package:uuid/uuid.dart';
 
 class CreateRidePage extends StatefulWidget {
   const CreateRidePage({super.key});
@@ -9,99 +11,141 @@ class CreateRidePage extends StatefulWidget {
 }
 
 class _CreateRidePageState extends State<CreateRidePage> {
-  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _travelerIdController = TextEditingController();
+  final TextEditingController _driverNameController = TextEditingController();
+  final TextEditingController _driverPhoneController = TextEditingController();
+  final TextEditingController _cabNumberController = TextEditingController();
+  final TextEditingController _pickupController = TextEditingController();
+  final TextEditingController _dropController = TextEditingController();
+
+  final RideService _rideService = RideService();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _travelerIdController.dispose();
+    _driverNameController.dispose();
+    _driverPhoneController.dispose();
+    _cabNumberController.dispose();
+    _pickupController.dispose();
+    _dropController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleCreateRide() async {
+    if (_isLoading) return;
+
+    if (_travelerIdController.text.isEmpty ||
+        _driverNameController.text.isEmpty ||
+        _driverPhoneController.text.isEmpty ||
+        _cabNumberController.text.isEmpty ||
+        _pickupController.text.isEmpty ||
+        _dropController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final ride = Ride(
+        id: const Uuid().v4(),
+        travelerId: _travelerIdController.text.trim(),
+        driverName: _driverNameController.text.trim(),
+        driverPhone: _driverPhoneController.text.trim(),
+        cabNumber: _cabNumberController.text.trim(),
+        pickup: _pickupController.text.trim(),
+        drop: _dropController.text.trim(),
+        status: 'pending',
+        createdAt: DateTime.now(),
+      );
+
+      await _rideService.createRide(ride);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ride created successfully')),
+        );
+        Navigator.pop(context, true); // Return true to indicate success
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create New Ride'),
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
+      appBar: AppBar(title: const Text('Create Ride')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextFormField(
+            TextField(
+              controller: _travelerIdController,
+              decoration: const InputDecoration(
+                labelText: 'Traveler ID',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _driverNameController,
               decoration: const InputDecoration(
                 labelText: 'Driver Name',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Please enter driver name';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            TextField(
+              controller: _driverPhoneController,
               decoration: const InputDecoration(
-                labelText: 'Phone Number',
+                labelText: 'Driver Phone',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.phone,
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Please enter phone number';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            TextField(
+              controller: _cabNumberController,
               decoration: const InputDecoration(
                 labelText: 'Cab Number',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Please enter cab number';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            TextField(
+              controller: _pickupController,
               decoration: const InputDecoration(
                 labelText: 'Pickup Location',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Please enter pickup location';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            TextField(
+              controller: _dropController,
               decoration: const InputDecoration(
                 labelText: 'Drop Location',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Please enter drop location';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState?.validate() ?? false) {
-                  // TODO: Save ride data to Firestore
-                  Navigator.pushReplacementNamed(
-                    context,
-                    Routes.activeRide,
-                  );
-                }
-              },
-              child: const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text('Start Ride'),
-              ),
+              onPressed: _isLoading ? null : _handleCreateRide,
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Create Ride'),
             ),
           ],
         ),
